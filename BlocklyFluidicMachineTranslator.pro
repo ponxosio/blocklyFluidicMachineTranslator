@@ -18,10 +18,14 @@ unix {
 
 HEADERS += \
     blocklyFluidicMachineTranslator/blocklyfluidicmachinetranslator.h \
-    blocklyFluidicMachineTranslator/blocklyfluidicmachinetranslator_global.h
+    blocklyFluidicMachineTranslator/blocklyfluidicmachinetranslator_global.h \
+    blocklyFluidicMachineTranslator/blocks/functionsdblockstranslator.h \
+    blocklyFluidicMachineTranslator/blocks/inputsblockstranslator.h
 
 SOURCES += \
-    blocklyFluidicMachineTranslator/blocklyfluidicmachinetranslator.cpp
+    blocklyFluidicMachineTranslator/blocklyfluidicmachinetranslator.cpp \
+    blocklyFluidicMachineTranslator/blocks/functionsdblockstranslator.cpp \
+    blocklyFluidicMachineTranslator/blocks/inputsblockstranslator.cpp
 
 debug {
     QMAKE_POST_LINK=X:\blockly_fluidicMachine_translator\blocklyFluidicMachineTranslator\setDLL.bat $$shell_path($$OUT_PWD/debug) debug
@@ -31,6 +35,12 @@ debug {
 
     INCLUDEPATH += X:\fluidicMachineModel\dll_debug\include
     LIBS += -L$$quote(X:\fluidicMachineModel\dll_debug\bin) -lFluidicMachineModel
+
+    INCLUDEPATH += X:\constraintsEngine\dll_debug\include
+    LIBS += -L$$quote(X:\constraintsEngine\dll_debug\bin) -lconstraintsEngineLibrary
+
+    INCLUDEPATH += X:\pythonPlugins\dll_debug\include
+    LIBS += -L$$quote(X:\pythonPlugins\dll_debug\bin) -lpythonPlugins
 
     INCLUDEPATH += X:\commomModel\dll_debug\include
     LIBS += -L$$quote(X:\commomModel\dll_debug\bin) -lcommonModel
@@ -44,6 +54,12 @@ debug {
 
     INCLUDEPATH += X:\fluidicMachineModel\dll_release\include
     LIBS += -L$$quote(X:\fluidicMachineModel\dll_release\bin) -lFluidicMachineModel
+
+    INCLUDEPATH += X:\constraintsEngine\dll_release\include
+    LIBS += -L$$quote(X:\constraintsEngine\dll_release\bin) -lconstraintsEngineLibrary
+
+    INCLUDEPATH += X:\pythonPlugins\dll_release\include
+    LIBS += -L$$quote(X:\pythonPlugins\dll_release\bin) -lpythonPlugins
 
     INCLUDEPATH += X:\commomModel\dll_release\include
     LIBS += -L$$quote(X:\commomModel\dll_release\bin) -lcommonModel
