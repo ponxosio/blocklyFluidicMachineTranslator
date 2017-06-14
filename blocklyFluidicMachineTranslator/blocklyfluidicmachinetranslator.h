@@ -17,8 +17,9 @@
 
 #include <fluidicmachinemodel/fluidicmachinemodel.h>
 #include <fluidicmachinemodel/machinegraph.h>
-
-#include <pythonPlugins/actuators/pythonpluginabstractfactory.h>
+#include <fluidicmachinemodel/fluidicnode/containernode.h>
+#include <fluidicmachinemodel/fluidicnode/pumpnode.h>
+#include <fluidicmachinemodel/fluidicnode/valvenode.h>
 
 #include <utils/AutoEnumerate.h>
 #include <utils/utilsjson.h>
@@ -34,7 +35,7 @@ class BLOCKLYFLUIDICMACHINETRANSLATORSHARED_EXPORT BlocklyFluidicMachineTranslat
     static const std::string VALVE_STR;
 
 public:
-    BlocklyFluidicMachineTranslator(const std::string & path, std::shared_ptr<CommandSender> communications);
+    BlocklyFluidicMachineTranslator(const std::string & path, std::shared_ptr<PluginAbstractFactory> factory);
     virtual ~BlocklyFluidicMachineTranslator();
 
     std::shared_ptr<FluidicMachineModel> translateFile();
@@ -43,7 +44,7 @@ protected:
     std::string path;
 
     std::shared_ptr<MachineGraph> model;
-    std::shared_ptr<PythonPluginAbstractFactory> factory;
+    std::shared_ptr<PluginAbstractFactory> factory;
 
     AutoEnumerate serie;
     std::unordered_map<std::string, int> variableIdMap;
@@ -59,7 +60,7 @@ protected:
                           const nlohmann::json & functionsObj,
                           const nlohmann::json & extraFunctionsObj);
 
-    int processReferenceBlock(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    int processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument);
 
     void processConnectionMap();
     void addNewConnection(int source, int sourcePort, int target);

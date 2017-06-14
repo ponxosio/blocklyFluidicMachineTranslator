@@ -202,6 +202,190 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::processSingleFunction(cons
     return actualFunction;
 }
 
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseElectrophorerFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        ElectrophoresisWorkingRange range = parseElectrophoresisWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<ElectrophoresisFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseElectrophorerFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseLightFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        LigthWorkingRange range = parseLghtsWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<LightFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseLightFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseHeatFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        HeaterWorkingRange range = parseHeatersWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<HeatFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseHeatFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseFluorescenceSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        MeasureFluorescenceWorkingRange range = parseMeasureFluorescenceWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<MeasureFluorescenceFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseFluorescenceSensorFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseOdSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        MeasureOdWorkingRange range = parseMeasureOdWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<MeasureOdFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseOdSensorFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseLuminiscenceSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<MeasureLuminiscenceFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseLuminiscenceSensorFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseVolumeSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<MeasureVolumeFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseVolumeSensorFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseTemperatureSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<MeasureTemperatureFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseTemperatureSensorFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseStirFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        StirWorkingRange range = parseStirWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<StirFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseStirFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseShakeFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        ShakeWorkingRange range = parseShakerWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<ShakeFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseShakeFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+std::shared_ptr<Function> FunctionsdBlocksTranslator::parseCentrifugateFunction(const nlohmann::json & functionObj) throw(std::invalid_argument) {
+    try {
+        PluginConfiguration configuration = fillConfigurationObj(functionObj);
+        CentrifugationWorkingRange range = parseCentrifugationWorkingRange(functionObj);
+
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
+
+        std::string minVolumeStr = functionObj["minVolume"];
+        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+        return std::make_shared<CentrifugateFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::parseCentrifugateFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
 CentrifugationWorkingRange FunctionsdBlocksTranslator::parseCentrifugationWorkingRange(const nlohmann::json & centrifugateObj) throw(std::invalid_argument) {
     try {
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{

@@ -84,17 +84,17 @@ protected:
 
     static std::shared_ptr<Function> processSingleFunction(const std::string & typeStr, const nlohmann::json & functionObj) throw(std::invalid_argument);
 
-    static std::shared_ptr<Function> parseElectrophorerFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseLightFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseHeatFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseFluorescenceSensorFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseOdSensorFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseLuminiscenceSensorFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseVolumeSensorFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseTemperatureSensorFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseStirFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseShakeFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
-    static std::shared_ptr<Function> parseCentrifugateFunction(const nlohmann::json & truthTableObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseElectrophorerFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseLightFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseHeatFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseFluorescenceSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseOdSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseLuminiscenceSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseVolumeSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseTemperatureSensorFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseStirFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseShakeFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
+    static std::shared_ptr<Function> parseCentrifugateFunction(const nlohmann::json & functionObj) throw(std::invalid_argument);
 
     static CentrifugationWorkingRange parseCentrifugationWorkingRange(const nlohmann::json & centrifugateObj) throw(std::invalid_argument);
     static ElectrophoresisWorkingRange parseElectrophoresisWorkingRange(const nlohmann::json & electrophorerObj) throw(std::invalid_argument);

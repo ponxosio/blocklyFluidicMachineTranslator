@@ -7,10 +7,10 @@ const std::string BlocklyFluidicMachineTranslator::CLOSE_CONTAINER_STR = "CLOSE_
 const std::string BlocklyFluidicMachineTranslator::PUMP_STR = "PUMP";
 const std::string BlocklyFluidicMachineTranslator::VALVE_STR = "VALVE";
 
-BlocklyFluidicMachineTranslator::BlocklyFluidicMachineTranslator(const std::string & path, std::shared_ptr<CommandSender> communications) :
+BlocklyFluidicMachineTranslator::BlocklyFluidicMachineTranslator(const std::string & path, std::shared_ptr<PluginAbstractFactory> factory) :
     path(path)
 {
-    factory = std::make_shared<PythonPluginAbstractFactory>(communications);
+    this->factory = factory;
 }
 
 BlocklyFluidicMachineTranslator::~BlocklyFluidicMachineTranslator() {
@@ -18,7 +18,7 @@ BlocklyFluidicMachineTranslator::~BlocklyFluidicMachineTranslator() {
 }
 
 std::shared_ptr<FluidicMachineModel> BlocklyFluidicMachineTranslator::translateFile() {
-    std::ifstream in(filePath);
+    std::ifstream in(path);
     json js;
     try {
         in >> js;
@@ -72,7 +72,7 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
                                              "reference",
                                              "type",
                                              "functions",
-                                             "number_pins"}, js);
+                                             "number_pins"}, blockObj);
 
         std::string id = blockObj["reference"];
 
@@ -81,11 +81,11 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
 
         std::string nodeType = blockObj["type"];
         if (nodeType.compare(OPEN_CONTAINER_STR) == 0) {
-            UtilsJSON::checkPropertiesExists(std::vector<std::string>{"extra_functions"}, js);
+            UtilsJSON::checkPropertiesExists(std::vector<std::string>{"extra_functions"}, blockObj);
 
             processContainer(id, ContainerNode::open, numberPins, blockObj["functions"], blockObj["extra_functions"]);
         } else if (nodeType.compare(CLOSE_CONTAINER_STR) == 0) {
-            UtilsJSON::checkPropertiesExists(std::vector<std::string>{"extra_functions"}, js);
+            UtilsJSON::checkPropertiesExists(std::vector<std::string>{"extra_functions"}, blockObj);
 
             processContainer(id, ContainerNode::close, numberPins, blockObj["functions"], blockObj["extra_functions"]);
         } else if (nodeType.compare(PUMP_STR) == 0) {
@@ -100,7 +100,7 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
             std::string portName = "port" + std::to_string(i);
             if(UtilsJSON::hasProperty(portName, blockObj)) {
                 int target = processReferenceBlock(blockObj[portName]);
-                addNewConnection(id, i-1, target);
+                addNewConnection(getReferenceId(id), i-1, target);
             } else {
                 throw(std::invalid_argument("missing port: " + portName));
             }
@@ -152,8 +152,45 @@ void BlocklyFluidicMachineTranslator::processContainer(
     model->addNode(nodePtr);
 }
 
-void BlocklyFluidicMachineTranslator::processConnectionMap() {
+int BlocklyFluidicMachineTranslator::processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument) {
+    try {
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"reference"}, referenceObj);
 
+        std::string reference = referenceObj["reference"];
+        return getReferenceId(reference);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("BlocklyFluidicMachineTranslator::processReferenceBlock. exception: " + std::string(e.what())));
+    }
+}
+
+
+void BlocklyFluidicMachineTranslator::processConnectionMap() {
+    for(const auto & connectionPair: connectionsMap) {
+        int source = connectionPair.first;
+        const std::unordered_map<int,int> & portsConnections = connectionPair.second;
+
+        for(const auto & portConnection: portsConnections) {
+            int target = portConnection.first;
+            int sourcePort = portConnection.second;
+            int targetPort = connectionsMap[target][source];
+
+            if (!model->areConnected(source, target) && !model->areConnected(target, source)) {
+                model->connectNodes(source, sourcePort, target, targetPort);
+            }
+        }
+    }
+}
+
+void BlocklyFluidicMachineTranslator::addNewConnection(int source, int sourcePort, int target) {
+    auto finded = connectionsMap.find(source);
+    if (finded != connectionsMap.end()) {
+        std::unordered_map<int,int> & portMap = finded->second;
+        portMap.insert(std::make_pair(target, sourcePort));
+    } else {
+        std::unordered_map<int,int> portMap;
+        portMap.insert(std::make_pair(target, sourcePort));
+        connectionsMap.insert(std::make_pair(source, portMap));
+    }
 }
 
 int BlocklyFluidicMachineTranslator::getReferenceId(const std::string & reference) {
