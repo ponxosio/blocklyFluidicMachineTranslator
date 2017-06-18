@@ -32,7 +32,7 @@ std::string InputsBlocksTranslator::processInput(const nlohmann::json & inputObj
 
 std::string InputsBlocksTranslator::processMathNumber(const nlohmann::json & inputObj) throw(std::invalid_argument) {
     try {
-        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"containerList"}, inputObj);
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"value"}, inputObj);
 
         return inputObj["value"];
     } catch (std::exception & e) {

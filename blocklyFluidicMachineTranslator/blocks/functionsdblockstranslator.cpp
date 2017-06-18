@@ -38,11 +38,10 @@ FunctionsdBlocksTranslator::FunctionsMap FunctionsdBlocksTranslator::makeFunctio
 std::vector<std::shared_ptr<Function>> FunctionsdBlocksTranslator::processFunctions(const nlohmann::json & functionObj) throw(std::invalid_argument) {
     try {
         std::vector<std::shared_ptr<Function>> functions;
-
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"type"}, functionObj);
 
         std::string typeStr = functionObj["type"];
-        if (typeStr.compare(FUNCTION_LIST_STR)) {
+        if (typeStr.compare(FUNCTION_LIST_STR) == 0) {
             UtilsJSON::checkPropertiesExists(std::vector<std::string>{"functionsList"}, functionObj);
 
             json functionList = functionObj["functionsList"];
@@ -82,24 +81,42 @@ std::shared_ptr<ValvePluginRouteFunction> FunctionsdBlocksTranslator::processVal
 
 std::shared_ptr<PumpPluginFunction> FunctionsdBlocksTranslator::processPumpFunction(
         const nlohmann::json & functionObj,
-        bool & reversible)
+        bool & reversible,
+        std::unordered_set<int> & portsIn,
+        std::unordered_set<int> & portsOut)
     throw(std::invalid_argument)
 {
     try {
         PluginConfiguration configObj = fillConfigurationObj(functionObj);
 
-        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"reversible"}, functionObj);
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{
+                                             "reversible",
+                                             "inPorts",
+                                             "outPorts"
+                                         }, functionObj);
+
         reversible = functionObj["reversible"];
 
-        PumpWorkingRange wRange = parsePumpWorkingRange(functionObj);
+        json inPortsList = functionObj["inPorts"];
+        for(auto it = inPortsList.begin(); it != inPortsList.end(); ++it) {
+            int actualInPort = *it;
+            portsIn.insert(actualInPort-1);
+        }
 
+        json outPortsList = functionObj["outPorts"];
+        for(auto it = outPortsList.begin(); it != outPortsList.end(); ++it) {
+            int actualOutPort = *it;
+            portsOut.insert(actualOutPort-1);
+        }
+
+        PumpWorkingRange wRange = parsePumpWorkingRange(functionObj);
         return std::make_shared<PumpPluginFunction>(std::shared_ptr<PluginAbstractFactory>(), configObj, wRange);
     } catch (std::exception & e) {
         throw(std::invalid_argument("FunctionsdBlocksTranslator::processPumpFunction. Exception ocurred " + std::string(e.what())));
     }
 }
 
-void FunctionsdBlocksTranslator::processGlasswareFunction(
+void FunctionsdBlocksTranslator::processOpenGlasswareFunction(
         const nlohmann::json & functionObj,
         units::Volume & minVolume,
         units::Volume & maxVolume)
@@ -113,16 +130,55 @@ void FunctionsdBlocksTranslator::processGlasswareFunction(
                                              "maxVolumeUnits"
                                          }, functionObj);
 
-       std::string minVolumeStr = functionObj["minVolume"];
-       double minVolumeValue = std::atof(minVolumeStr.c_str());
+       double minVolumeValue = functionObj["minVolume"];
        minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
-       std::string maxVolumeStr = functionObj["maxVolume"];
-       double maxVolumeValue = std::atof(maxVolumeStr.c_str());
+       double maxVolumeValue = functionObj["maxVolume"];
        maxVolume = maxVolumeValue * UtilsJSON::getVolumeUnits(functionObj["maxVolumeUnits"]);
 
     } catch (std::exception & e) {
-        throw(std::invalid_argument("FunctionsdBlocksTranslator::processGlasswareFunction. Exception ocurred " + std::string(e.what())));
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::processOpenGlasswareFunction. Exception ocurred " + std::string(e.what())));
+    }
+}
+
+void FunctionsdBlocksTranslator::processCloseGlasswareFunction(
+        const nlohmann::json & functionObj,
+        units::Volume & minVolume,
+        units::Volume & maxVolume,
+        std::unordered_set<int> & portsIn,
+        std::unordered_set<int> & portsOut)
+    throw(std::invalid_argument)
+{
+    try {
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{
+                                             "minVolume",
+                                             "minVolumeUnits",
+                                             "maxVolume",
+                                             "maxVolumeUnits",
+                                             "inPorts",
+                                             "outPorts"
+                                         }, functionObj);
+
+       double minVolumeValue = functionObj["minVolume"];
+       minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
+
+       double maxVolumeValue = functionObj["maxVolume"];
+       maxVolume = maxVolumeValue * UtilsJSON::getVolumeUnits(functionObj["maxVolumeUnits"]);
+
+       json inPortsList = functionObj["inPorts"];
+       for(auto it = inPortsList.begin(); it != inPortsList.end(); ++it) {
+           int actualInPort = *it;
+           portsIn.insert(actualInPort-1);
+       }
+
+       json outPortsList = functionObj["outPorts"];
+       for(auto it = outPortsList.begin(); it != outPortsList.end(); ++it) {
+           int actualOutPort = *it;
+           portsOut.insert(actualOutPort-1);
+       }
+
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("FunctionsdBlocksTranslator::processCloseGlasswareFunction. Exception ocurred " + std::string(e.what())));
     }
 }
 
@@ -209,8 +265,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseElectrophorerFunction
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<ElectrophoresisFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -226,8 +281,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseLightFunction(const n
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<LightFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -243,8 +297,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseHeatFunction(const nl
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<HeatFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -260,8 +313,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseFluorescenceSensorFun
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<MeasureFluorescenceFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -277,8 +329,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseOdSensorFunction(cons
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<MeasureOdFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -293,8 +344,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseLuminiscenceSensorFun
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<MeasureLuminiscenceFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume);
@@ -309,8 +359,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseVolumeSensorFunction(
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<MeasureVolumeFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume);
@@ -325,8 +374,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseTemperatureSensorFunc
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<MeasureTemperatureFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume);
@@ -342,8 +390,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseStirFunction(const nl
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<StirFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -359,8 +406,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseShakeFunction(const n
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<ShakeFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -376,8 +422,7 @@ std::shared_ptr<Function> FunctionsdBlocksTranslator::parseCentrifugateFunction(
 
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"minVolume", "minVolumeUnits"}, functionObj);
 
-        std::string minVolumeStr = functionObj["minVolume"];
-        double minVolumeValue = std::atof(minVolumeStr.c_str());
+        double minVolumeValue = functionObj["minVolume"];
         units::Volume minVolume = minVolumeValue * UtilsJSON::getVolumeUnits(functionObj["minVolumeUnits"]);
 
         return std::make_shared<CentrifugateFunction>(std::shared_ptr<PluginAbstractFactory>(),configuration, minVolume, range);
@@ -394,12 +439,10 @@ CentrifugationWorkingRange FunctionsdBlocksTranslator::parseCentrifugationWorkin
                                              "maxRange",
                                              "maxRangeUnits"}, centrifugateObj);
 
-        std::string minRateStr = centrifugateObj["minRange"];
-        double minRateValue = std::atof(minRateStr.c_str());
+        double minRateValue = centrifugateObj["minRange"];
         units::Frequency minRate = minRateValue * UtilsJSON::getFrequencyUnits(centrifugateObj["minRangeUnits"]);
 
-        std::string maxRateStr = centrifugateObj["maxRange"];
-        double maxRateValue = std::atof(maxRateStr.c_str());
+        double maxRateValue = centrifugateObj["maxRange"];
         units::Frequency maxRate = maxRateValue * UtilsJSON::getFrequencyUnits(centrifugateObj["maxRangeUnits"]);
 
         return CentrifugationWorkingRange(minRate, maxRate);
@@ -418,13 +461,11 @@ ElectrophoresisWorkingRange FunctionsdBlocksTranslator::parseElectrophoresisWork
                                              "maxRageEFieldUnits",
                                              "maxRageLengthUnits"}, electrophorerObj);
 
-        std::string minRateStr = electrophorerObj["minRange"];
-        double minRateValue = std::atof(minRateStr.c_str());
+        double minRateValue = electrophorerObj["minRange"];
         units::ElectricField minRate = minRateValue *
                 (UtilsJSON::getElectricPotentialUnits(electrophorerObj["minRageEFieldUnits"]) / UtilsJSON::getLengthUnits(electrophorerObj["minRageLengthUnits"]));
 
-        std::string maxRateStr = electrophorerObj["maxRange"];
-        double maxRateValue = std::atof(maxRateStr.c_str());
+        double maxRateValue = electrophorerObj["maxRange"];
         units::ElectricField maxRate = maxRateValue *
                 (UtilsJSON::getElectricPotentialUnits(electrophorerObj["maxRageEFieldUnits"]) / UtilsJSON::getLengthUnits(electrophorerObj["maxRageLengthUnits"]));
 
@@ -442,12 +483,10 @@ HeaterWorkingRange FunctionsdBlocksTranslator::parseHeatersWorkingRange(const nl
                                              "maxRange",
                                              "maxRangeUnits"}, heaterObj);
 
-        std::string minRateStr = heaterObj["minRange"];
-        double minRateValue = std::atof(minRateStr.c_str());
+        double minRateValue = heaterObj["minRange"];
         units::Temperature minRate = minRateValue * UtilsJSON::getTemperatureUnits(heaterObj["minRangeUnits"]);
 
-        std::string maxRateStr = heaterObj["maxRange"];
-        double maxRateValue = std::atof(maxRateStr.c_str());
+        double maxRateValue = heaterObj["maxRange"];
         units::Temperature maxRate = maxRateValue * UtilsJSON::getTemperatureUnits(heaterObj["maxRangeUnits"]);
 
         return HeaterWorkingRange(minRate, maxRate);
@@ -468,20 +507,16 @@ LigthWorkingRange FunctionsdBlocksTranslator::parseLghtsWorkingRange(const nlohm
                                              "maxIntensity",
                                              "maxIntensityUnits"}, lightObj);
 
-        std::string minWavelengthStr = lightObj["minWavelength"];
-        double minWavelengthValue = std::atof(minWavelengthStr.c_str());
+        double minWavelengthValue = lightObj["minWavelength"];
         units::Length minWavelength = minWavelengthValue * UtilsJSON::getLengthUnits(lightObj["minWavelengthUnits"]);
 
-        std::string maxWavelengthStr = lightObj["maxWavelength"];
-        double maxWavelengthValue = std::atof(maxWavelengthStr.c_str());
+        double maxWavelengthValue = lightObj["maxWavelength"];
         units::Length maxWavelength = maxWavelengthValue * UtilsJSON::getLengthUnits(lightObj["maxWavelengthUnits"]);
 
-        std::string minIntensityStr = lightObj["minIntensity"];
-        double minIntensityValue = std::atof(minIntensityStr.c_str());
+        double minIntensityValue = lightObj["minIntensity"];
         units::LuminousIntensity minIntensity = minIntensityValue * UtilsJSON::getLuminousIntensityUnits(lightObj["minIntensityUnits"]);
 
-        std::string maxIntensityStr = lightObj["maxIntensity"];
-        double maxIntensityValue = std::atof(maxIntensityStr.c_str());
+        double maxIntensityValue = lightObj["maxIntensity"];
         units::LuminousIntensity maxIntensity = maxIntensityValue * UtilsJSON::getLuminousIntensityUnits(lightObj["maxIntensityUnits"]);
 
         return LigthWorkingRange(minWavelength, maxWavelength, minIntensity, maxIntensity);
@@ -502,20 +537,16 @@ MeasureFluorescenceWorkingRange FunctionsdBlocksTranslator::parseMeasureFluoresc
                                              "maxExcitation",
                                              "maxExcitationUnits"}, measureFluorescenceObj);
 
-        std::string minEmissionStr = measureFluorescenceObj["minEmission"];
-        double minEmissionValue = std::atof(minEmissionStr.c_str());
+        double minEmissionValue = measureFluorescenceObj["minEmission"];
         units::Length minEmission = minEmissionValue * UtilsJSON::getLengthUnits(measureFluorescenceObj["minEmissionUnits"]);
 
-        std::string maxEmissionStr = measureFluorescenceObj["maxEmission"];
-        double maxEmissionValue = std::atof(maxEmissionStr.c_str());
+        double maxEmissionValue = measureFluorescenceObj["maxEmission"];
         units::Length maxEmission = maxEmissionValue * UtilsJSON::getLengthUnits(measureFluorescenceObj["maxEmissionUnits"]);
 
-        std::string minExcitationStr = measureFluorescenceObj["minExcitation"];
-        double minExcitationValue = std::atof(minExcitationStr.c_str());
+        double minExcitationValue = measureFluorescenceObj["minExcitation"];
         units::Length minExcitation = minExcitationValue * UtilsJSON::getLengthUnits(measureFluorescenceObj["minExcitationUnits"]);
 
-        std::string maxExcitationStr = measureFluorescenceObj["maxExcitation"];
-        double maxExcitationValue = std::atof(maxExcitationStr.c_str());
+        double maxExcitationValue = measureFluorescenceObj["maxExcitation"];
         units::Length maxExcitation = maxExcitationValue * UtilsJSON::getLengthUnits(measureFluorescenceObj["maxExcitationUnits"]);
 
         return MeasureFluorescenceWorkingRange(minEmission, maxEmission, minExcitation, maxExcitation);
@@ -532,12 +563,10 @@ MeasureOdWorkingRange FunctionsdBlocksTranslator::parseMeasureOdWorkingRange(con
                                              "maxRange",
                                              "maxRangeUnits"}, measureOdObj);
 
-        std::string minRateStr = measureOdObj["minRange"];
-        double minRateValue = std::atof(minRateStr.c_str());
+        double minRateValue = measureOdObj["minRange"];
         units::Length minRate = minRateValue * UtilsJSON::getLengthUnits(measureOdObj["minRangeUnits"]);
 
-        std::string maxRateStr = measureOdObj["maxRange"];
-        double maxRateValue = std::atof(maxRateStr.c_str());
+        double maxRateValue = measureOdObj["maxRange"];
         units::Length maxRate = maxRateValue * UtilsJSON::getLengthUnits(measureOdObj["maxRangeUnits"]);
 
         return MeasureOdWorkingRange(minRate, maxRate);
@@ -556,12 +585,10 @@ PumpWorkingRange FunctionsdBlocksTranslator::parsePumpWorkingRange(const nlohman
                                              "maxRangeVolumeUnits",
                                              "maxRangeTimeUnits"}, pumpObj);
 
-        std::string minRateStr = pumpObj["minRange"];
-        double minRateValue = std::atof(minRateStr.c_str());
+        double minRateValue = pumpObj["minRange"];
         units::Volumetric_Flow minRate = minRateValue * (UtilsJSON::getVolumeUnits(pumpObj["minRangeVolumeUnits"]) / UtilsJSON::getTimeUnits(pumpObj["minRangeTimeUnits"]));
 
-        std::string maxRateStr = pumpObj["maxRange"];
-        double maxRateValue = std::atof(maxRateStr.c_str());
+        double maxRateValue = pumpObj["maxRange"];
         units::Volumetric_Flow maxRate = maxRateValue * (UtilsJSON::getVolumeUnits(pumpObj["maxRangeVolumeUnits"]) / UtilsJSON::getTimeUnits(pumpObj["maxRangeTimeUnits"]));
 
         return PumpWorkingRange(minRate, maxRate);
@@ -578,12 +605,10 @@ ShakeWorkingRange FunctionsdBlocksTranslator::parseShakerWorkingRange(const nloh
                                              "maxRange",
                                              "maxRangeUnits"}, shakerObj);
 
-        std::string minRateStr = shakerObj["minRange"];
-        double minRateValue = std::atof(minRateStr.c_str());
+        double minRateValue = shakerObj["minRange"];
         units::Frequency minRate = minRateValue * UtilsJSON::getFrequencyUnits(shakerObj["minRangeUnits"]);
 
-        std::string maxRateStr = shakerObj["maxRange"];
-        double maxRateValue = std::atof(maxRateStr.c_str());
+        double maxRateValue = shakerObj["maxRange"];
         units::Frequency maxRate = maxRateValue * UtilsJSON::getFrequencyUnits(shakerObj["maxRangeUnits"]);
 
         return ShakeWorkingRange(minRate, maxRate);
@@ -600,12 +625,10 @@ StirWorkingRange FunctionsdBlocksTranslator::parseStirWorkingRange(const nlohman
                                              "maxRange",
                                              "maxRangeUnits"}, stirObj);
 
-        std::string minRateStr = stirObj["minRange"];
-        double minRateValue = std::atof(minRateStr.c_str());
+        double minRateValue = stirObj["minRange"];
         units::Frequency minRate = minRateValue * UtilsJSON::getFrequencyUnits(stirObj["minRangeUnits"]);
 
-        std::string maxRateStr = stirObj["maxRange"];
-        double maxRateValue = std::atof(maxRateStr.c_str());
+        double maxRateValue = stirObj["maxRange"];
         units::Frequency maxRate = maxRateValue * UtilsJSON::getFrequencyUnits(stirObj["maxRangeUnits"]);
 
         return StirWorkingRange(minRate, maxRate);

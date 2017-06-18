@@ -48,22 +48,30 @@ protected:
 
     AutoEnumerate serie;
     std::unordered_map<std::string, int> variableIdMap;
+
     std::unordered_map<int,std::unordered_map<int,int>> connectionsMap;
+    std::unordered_map<int,std::unordered_set<int>> directedConnectionsMapsIn;
+    std::unordered_map<int,std::unordered_set<int>> directedConnectionsMapsOut;
 
     void processConfigurationBlock(const nlohmann::json & blockObj) throw(std::invalid_argument);
 
     void processPump(const std::string & id, int pinNumber, const nlohmann::json & functionsObj);
     void processValve(const std::string & id, int pinNumber, const nlohmann::json & functionsObj);
-    void processContainer(const std::string & id,
-                          ContainerNode::ContainerType type,
-                          int pinNumber,
-                          const nlohmann::json & functionsObj,
-                          const nlohmann::json & extraFunctionsObj);
+
+    void processOpenContainer(const std::string & id,
+                              int pinNumber,
+                              const nlohmann::json & functionsObj,
+                              const nlohmann::json & extraFunctionsObj);
+    void processCloseContainer(const std::string & id,
+                              int pinNumber,
+                              const nlohmann::json & functionsObj,
+                              const nlohmann::json & extraFunctionsObj);
 
     int processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument);
 
-    void processConnectionMap();
+    void processConnectionMap() throw(std::invalid_argument);
     void addNewConnection(int source, int sourcePort, int target);
+    void addDirectionPorts(int id, const std::unordered_set<int> & inPorts, const std::unordered_set<int> & outPorts) throw(std::invalid_argument);
 
     int getReferenceId(const std::string & reference);
 };
