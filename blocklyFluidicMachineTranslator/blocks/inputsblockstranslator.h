@@ -11,7 +11,7 @@
 
 class InputsBlocksTranslator
 {
-    static const std::string MATH_NUMBER_STR;
+    static const std::string MATHBLOCK_NUMBER_STR;
     static const std::string MATH_NUMBER_LIST_STR;
     static const std::string STRING_STR;
     static const std::string STRING_LIST_STR;
@@ -22,6 +22,7 @@ public:
     static std::string processInput(const nlohmann::json & inputObj) throw(std::invalid_argument);
 
 protected:
+
     static std::string processMathNumber(const nlohmann::json & inputObj) throw(std::invalid_argument);
     static std::string processMathNumberList(const nlohmann::json & inputObj) throw(std::invalid_argument);
 

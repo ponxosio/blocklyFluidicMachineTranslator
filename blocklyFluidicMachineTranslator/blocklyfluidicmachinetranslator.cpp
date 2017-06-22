@@ -17,7 +17,7 @@ BlocklyFluidicMachineTranslator::~BlocklyFluidicMachineTranslator() {
 
 }
 
-std::shared_ptr<FluidicMachineModel> BlocklyFluidicMachineTranslator::translateFile() {
+BlocklyFluidicMachineTranslator::ModelMappingTuple BlocklyFluidicMachineTranslator::translateFile() {
     std::ifstream in(path);
     json js;
     try {
@@ -56,7 +56,10 @@ std::shared_ptr<FluidicMachineModel> BlocklyFluidicMachineTranslator::translateF
                                                       defaultRate,
                                                       defaultRateUnits);
         createdModel->updatePluginFactory(factory);
-        return createdModel;
+
+        std::shared_ptr<FluidicModelMapping> mapping = std::make_shared<FluidicModelMapping>(createdModel);
+
+        return std::make_tuple(createdModel, mapping);
     } catch (std::exception & e) {
         throw(std::invalid_argument("BlocklyFluidicMachineTranslator::translateFile. Exception ocurred " + std::string(e.what())));
     }

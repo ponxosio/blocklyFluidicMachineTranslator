@@ -1,11 +1,11 @@
 #include "inputsblockstranslator.h"
 
-using json = nlohmann::json;
-
-const std::string InputsBlocksTranslator::MATH_NUMBER_STR = "math_number";
+const std::string InputsBlocksTranslator::MATHBLOCK_NUMBER_STR = "math_number";
 const std::string InputsBlocksTranslator::MATH_NUMBER_LIST_STR = "number_list";
 const std::string InputsBlocksTranslator::STRING_STR = "text";
 const std::string InputsBlocksTranslator::STRING_LIST_STR = "text_list";
+
+using json = nlohmann::json;
 
 std::string InputsBlocksTranslator::processInput(const nlohmann::json & inputObj) throw(std::invalid_argument) {
     try {
@@ -13,7 +13,7 @@ std::string InputsBlocksTranslator::processInput(const nlohmann::json & inputObj
 
         std::string input;
         std::string type = inputObj["block_type"];
-        if (type.compare(MATH_NUMBER_STR) == 0) {
+        if (type.compare(MATHBLOCK_NUMBER_STR) == 0) {
             input = processMathNumber(inputObj);
         } else if (type.compare(MATH_NUMBER_LIST_STR) == 0) {
             input = processMathNumberList(inputObj);

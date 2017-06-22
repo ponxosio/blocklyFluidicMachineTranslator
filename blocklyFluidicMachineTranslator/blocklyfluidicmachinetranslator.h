@@ -4,6 +4,7 @@
 #include <fstream>
 #include <memory>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -21,6 +22,8 @@
 #include <fluidicmachinemodel/fluidicnode/pumpnode.h>
 #include <fluidicmachinemodel/fluidicnode/valvenode.h>
 
+#include <fluidicmodelmapping/fluidicmodelmapping.h>
+
 #include <utils/AutoEnumerate.h>
 #include <utils/utilsjson.h>
 
@@ -35,10 +38,13 @@ class BLOCKLYFLUIDICMACHINETRANSLATORSHARED_EXPORT BlocklyFluidicMachineTranslat
     static const std::string VALVE_STR;
 
 public:
+
+    typedef std::tuple<std::shared_ptr<FluidicMachineModel>, std::shared_ptr<FluidicModelMapping>> ModelMappingTuple;
+
     BlocklyFluidicMachineTranslator(const std::string & path, std::shared_ptr<PluginAbstractFactory> factory);
     virtual ~BlocklyFluidicMachineTranslator();
 
-    std::shared_ptr<FluidicMachineModel> translateFile();
+    ModelMappingTuple translateFile();
 
 protected:
     std::string path;

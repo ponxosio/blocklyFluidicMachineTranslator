@@ -60,6 +60,12 @@ debug {
 
     INCLUDEPATH += X:\protocolGraph\dll_debug\include
     LIBS += -L$$quote(X:\protocolGraph\dll_debug\bin) -lprotocolGraph
+
+    INCLUDEPATH += X:\fluidicModelMapping\dll_debug\include
+    LIBS += -L$$quote(X:\fluidicModelMapping\dll_debug\bin) -lFluidicModelMapping
+
+    INCLUDEPATH += X:\bioblocksTranslation\dll_debug\include
+    LIBS += -L$$quote(X:\bioblocksTranslation\dll_debug\bin) -lbioblocksTranslation
 }
 
 !debug {
@@ -79,6 +85,12 @@ debug {
 
     INCLUDEPATH += X:\protocolGraph\dll_release\include
     LIBS += -L$$quote(X:\protocolGraph\dll_release\bin) -lprotocolGraph
+
+    INCLUDEPATH += X:\fluidicModelMapping\dll_release\include
+    LIBS += -L$$quote(X:\fluidicModelMapping\dll_release\bin) -lFluidicModelMapping
+
+    INCLUDEPATH += X:\bioblocksTranslation\dll_release\include
+    LIBS += -L$$quote(X:\bioblocksTranslation\dll_release\bin) -lbioblocksTranslation
 }
 
 INCLUDEPATH += X:\libraries\cereal-1.2.2\include
