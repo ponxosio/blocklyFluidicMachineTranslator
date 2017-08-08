@@ -55,7 +55,7 @@ protected:
     AutoEnumerate serie;
     std::unordered_map<std::string, int> variableIdMap;
 
-    std::unordered_map<int,std::unordered_map<int,int>> connectionsMap;
+    std::unordered_map<int,std::unordered_map<float,int>> connectionsMap;
     std::unordered_map<int,std::unordered_set<int>> directedConnectionsMapsIn;
     std::unordered_map<int,std::unordered_set<int>> directedConnectionsMapsOut;
 
@@ -73,10 +73,10 @@ protected:
                               const nlohmann::json & functionsObj,
                               const nlohmann::json & extraFunctionsObj);
 
-    int processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument);
+    float processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument);
 
     void processConnectionMap() throw(std::invalid_argument);
-    void addNewConnection(int source, int sourcePort, int target);
+    void addNewConnection(int source, int sourcePort, float target);
     void addDirectionPorts(int id, const std::unordered_set<int> & inPorts, const std::unordered_set<int> & outPorts) throw(std::invalid_argument);
 
     int getReferenceId(const std::string & reference);

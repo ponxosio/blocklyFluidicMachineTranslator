@@ -97,7 +97,7 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
         for(int i = 1; i <= numberPins; i++) {
             std::string portName = "port" + std::to_string(i);
             if(UtilsJSON::hasProperty(portName, blockObj)) {
-                int target = processReferenceBlock(blockObj[portName]);
+                float target = processReferenceBlock(blockObj[portName]);
                 addNewConnection(getReferenceId(id), i-1, target);
             } else {
                 throw(std::invalid_argument("missing port: " + portName));
@@ -188,12 +188,16 @@ void BlocklyFluidicMachineTranslator::processCloseContainer(
     model->addNode(nodePtr);
 }
 
-int BlocklyFluidicMachineTranslator::processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument) {
+float BlocklyFluidicMachineTranslator::processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument) {
     try {
         UtilsJSON::checkPropertiesExists(std::vector<std::string>{"reference"}, referenceObj);
 
-        std::string reference = referenceObj["reference"];
-        return getReferenceId(reference);
+        if (referenceObj["block_type"] == "part_copy") {
+            return 0.1 + processReferenceBlock(referenceObj["reference"]);
+        } else {
+            std::string reference = referenceObj["reference"];
+            return getReferenceId(reference);
+        }
     } catch (std::exception & e) {
         throw(std::invalid_argument("BlocklyFluidicMachineTranslator::processReferenceBlock. exception: " + std::string(e.what())));
     }
@@ -201,24 +205,28 @@ int BlocklyFluidicMachineTranslator::processReferenceBlock(const nlohmann::json 
 
 
 void BlocklyFluidicMachineTranslator::processConnectionMap() throw(std::invalid_argument) {
+    std::unordered_set<int> proccessed;
+
     //first process the nodes with fixed directions
     for(const auto & directionPair: directedConnectionsMapsIn) {
         int source = directionPair.first;
         const std::unordered_set<int> & inPorts = directionPair.second;
         const std::unordered_set<int> & outPorts = directedConnectionsMapsOut[source];
 
-        const std::unordered_map<int,int> & portsConnections = connectionsMap[source];
+        const std::unordered_map<float,int> & portsConnections = connectionsMap[source];
         for(const auto & connectPair : portsConnections) {
-            int target = connectPair.first;
+            int target = std::floorf(connectPair.first);
+            float prime = connectPair.first - target;
+
             int sourcePort = connectPair.second;
-            int targetPort = connectionsMap[target][source];
+            int targetPort = connectionsMap[target][source + prime];
 
             if(inPorts.find(sourcePort) != inPorts.end()) {
-                if (!model->areConnected(source, target) && !model->areConnected(target, source)) {
+                if (proccessed.find(target) == proccessed.end()) {
                     model->connectNodes(target, source, targetPort, sourcePort);
                 }
             } else if (outPorts.find(sourcePort) != outPorts.end()) {
-                if (!model->areConnected(source, target) && !model->areConnected(target, source)) {
+                if (proccessed.find(target) == proccessed.end()) {
                     model->connectNodes(source, target, sourcePort, targetPort);
                 }
             } else {
@@ -227,32 +235,36 @@ void BlocklyFluidicMachineTranslator::processConnectionMap() throw(std::invalid_
             }
         }
         connectionsMap.erase(source); //once this node is processed remove it from the map so is not processed again in the next for
+        proccessed.insert(source); //add to processed so edges are not duplicated
     }
 
     //then process the reamining nodes that does not have fixed directions
     for(const auto & connectionPair: connectionsMap) {
         int source = connectionPair.first;
-        const std::unordered_map<int,int> & portsConnections = connectionPair.second;
+        const std::unordered_map<float,int> & portsConnections = connectionPair.second;
 
         for(const auto & portConnection: portsConnections) {
-            int target = portConnection.first;
-            int sourcePort = portConnection.second;
-            int targetPort = connectionsMap[target][source];
+            int target = std::floorf(portConnection.first);
+            float prime = portConnection.first - target;
 
-            if (!model->areConnected(source, target) && !model->areConnected(target, source)) {
+            int sourcePort = portConnection.second;
+            int targetPort = connectionsMap[target][source + prime];
+
+            if (proccessed.find(target) == proccessed.end()) {
                 model->connectNodes(source, target, sourcePort, targetPort);
             }
         }
+        proccessed.insert(source); //add to processed so edges are not duplicated
     }
 }
 
-void BlocklyFluidicMachineTranslator::addNewConnection(int source, int sourcePort, int target) {
+void BlocklyFluidicMachineTranslator::addNewConnection(int source, int sourcePort, float target) {
     auto finded = connectionsMap.find(source);
     if (finded != connectionsMap.end()) {
-        std::unordered_map<int,int> & portMap = finded->second;
+        std::unordered_map<float,int> & portMap = finded->second;
         portMap.insert(std::make_pair(target, sourcePort));
     } else {
-        std::unordered_map<int,int> portMap;
+        std::unordered_map<float,int> portMap;
         portMap.insert(std::make_pair(target, sourcePort));
         connectionsMap.insert(std::make_pair(source, portMap));
     }
