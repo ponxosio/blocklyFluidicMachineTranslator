@@ -88,7 +88,7 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
             processCloseContainer(id, numberPins, blockObj["functions"], blockObj["extra_functions"]);
         } else if (nodeType.compare(PUMP_STR) == 0) {
             processPump(id, numberPins, blockObj["functions"]);
-        } else if (nodeType.compare(PUMP_STR) == 0) {
+        } else if (nodeType.compare(VALVE_STR) == 0) {
             processValve(id, numberPins, blockObj["functions"]);
         } else {
             throw(std::invalid_argument("unknow node type: " + nodeType));
