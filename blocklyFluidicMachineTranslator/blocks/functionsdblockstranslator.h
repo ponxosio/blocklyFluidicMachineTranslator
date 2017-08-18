@@ -71,10 +71,7 @@ public:
     static std::shared_ptr<ValvePluginRouteFunction> processValveFunction(const nlohmann::json & functionObj,
                                                                           ValveNode::TruthTable & truthTable) throw(std::invalid_argument);
 
-    static std::shared_ptr<PumpPluginFunction> processPumpFunction(const nlohmann::json & functionObj,
-                                                                   bool & reversible,
-                                                                   std::unordered_set<int> & portsIn,
-                                                                   std::unordered_set<int> & portsOut) throw(std::invalid_argument);
+    static std::shared_ptr<PumpPluginFunction> processPumpFunction(const nlohmann::json & functionObj, bool & reversible) throw(std::invalid_argument);
 
     static void processOpenGlasswareFunction(const nlohmann::json & functionObj,
                                              units::Volume & minVolume,
@@ -82,9 +79,7 @@ public:
 
     static void processCloseGlasswareFunction(const nlohmann::json & functionObj,
                                               units::Volume & minVolume,
-                                              units::Volume & maxVolume,
-                                              std::unordered_set<int> & portsIn,
-                                              std::unordered_set<int> & portsOut) throw(std::invalid_argument);
+                                              units::Volume & maxVolume) throw(std::invalid_argument);
 
 protected:
     static PluginConfiguration fillConfigurationObj(const nlohmann::json & pluginObj) throw(std::invalid_argument);

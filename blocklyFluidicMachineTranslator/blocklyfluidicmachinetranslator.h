@@ -46,6 +46,9 @@ public:
 
     ModelMappingTuple translateFile();
 
+    const std::unordered_map<std::string, int> & getVariableIdMap() const {
+        return variableIdMap;
+    }
 protected:
     std::string path;
 
@@ -59,10 +62,14 @@ protected:
     std::unordered_map<int,std::unordered_set<int>> directedConnectionsMapsIn;
     std::unordered_map<int,std::unordered_set<int>> directedConnectionsMapsOut;
 
+    std::vector<std::unordered_set<int>> twinsVector;
+
     void processConfigurationBlock(const nlohmann::json & blockObj) throw(std::invalid_argument);
+    void processDirectionsPorts(const std::string & id, const nlohmann::json & blockObj) throw(std::invalid_argument);
 
     void processPump(const std::string & id, int pinNumber, const nlohmann::json & functionsObj);
     void processValve(const std::string & id, int pinNumber, const nlohmann::json & functionsObj);
+    void processValveTwins(const std::string & id, const nlohmann::json & functionsObj);
 
     void processOpenContainer(const std::string & id,
                               int pinNumber,
@@ -76,6 +83,8 @@ protected:
     float processReferenceBlock(const nlohmann::json & referenceObj) throw(std::invalid_argument);
 
     void processConnectionMap() throw(std::invalid_argument);
+    void processTwins();
+
     void addNewConnection(int source, int sourcePort, float target);
     void addDirectionPorts(int id, const std::unordered_set<int> & inPorts, const std::unordered_set<int> & outPorts) throw(std::invalid_argument);
 

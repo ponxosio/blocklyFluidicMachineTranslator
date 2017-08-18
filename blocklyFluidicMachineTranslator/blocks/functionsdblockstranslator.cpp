@@ -79,35 +79,14 @@ std::shared_ptr<ValvePluginRouteFunction> FunctionsdBlocksTranslator::processVal
     }
 }
 
-std::shared_ptr<PumpPluginFunction> FunctionsdBlocksTranslator::processPumpFunction(
-        const nlohmann::json & functionObj,
-        bool & reversible,
-        std::unordered_set<int> & portsIn,
-        std::unordered_set<int> & portsOut)
+std::shared_ptr<PumpPluginFunction> FunctionsdBlocksTranslator::processPumpFunction(const nlohmann::json & functionObj, bool & reversible)
     throw(std::invalid_argument)
 {
     try {
         PluginConfiguration configObj = fillConfigurationObj(functionObj);
 
-        UtilsJSON::checkPropertiesExists(std::vector<std::string>{
-                                             "reversible",
-                                             "inPorts",
-                                             "outPorts"
-                                         }, functionObj);
-
+        UtilsJSON::checkPropertiesExists(std::vector<std::string>{"reversible"}, functionObj);
         reversible = functionObj["reversible"];
-
-        json inPortsList = functionObj["inPorts"];
-        for(auto it = inPortsList.begin(); it != inPortsList.end(); ++it) {
-            int actualInPort = *it;
-            portsIn.insert(actualInPort-1);
-        }
-
-        json outPortsList = functionObj["outPorts"];
-        for(auto it = outPortsList.begin(); it != outPortsList.end(); ++it) {
-            int actualOutPort = *it;
-            portsOut.insert(actualOutPort-1);
-        }
 
         PumpWorkingRange wRange = parsePumpWorkingRange(functionObj);
         return std::make_shared<PumpPluginFunction>(std::shared_ptr<PluginAbstractFactory>(), configObj, wRange);
@@ -144,9 +123,7 @@ void FunctionsdBlocksTranslator::processOpenGlasswareFunction(
 void FunctionsdBlocksTranslator::processCloseGlasswareFunction(
         const nlohmann::json & functionObj,
         units::Volume & minVolume,
-        units::Volume & maxVolume,
-        std::unordered_set<int> & portsIn,
-        std::unordered_set<int> & portsOut)
+        units::Volume & maxVolume)
     throw(std::invalid_argument)
 {
     try {
@@ -154,9 +131,7 @@ void FunctionsdBlocksTranslator::processCloseGlasswareFunction(
                                              "minVolume",
                                              "minVolumeUnits",
                                              "maxVolume",
-                                             "maxVolumeUnits",
-                                             "inPorts",
-                                             "outPorts"
+                                             "maxVolumeUnits"
                                          }, functionObj);
 
        double minVolumeValue = functionObj["minVolume"];
@@ -164,19 +139,6 @@ void FunctionsdBlocksTranslator::processCloseGlasswareFunction(
 
        double maxVolumeValue = functionObj["maxVolume"];
        maxVolume = maxVolumeValue * UtilsJSON::getVolumeUnits(functionObj["maxVolumeUnits"]);
-
-       json inPortsList = functionObj["inPorts"];
-       for(auto it = inPortsList.begin(); it != inPortsList.end(); ++it) {
-           int actualInPort = *it;
-           portsIn.insert(actualInPort-1);
-       }
-
-       json outPortsList = functionObj["outPorts"];
-       for(auto it = outPortsList.begin(); it != outPortsList.end(); ++it) {
-           int actualOutPort = *it;
-           portsOut.insert(actualOutPort-1);
-       }
-
     } catch (std::exception & e) {
         throw(std::invalid_argument("FunctionsdBlocksTranslator::processCloseGlasswareFunction. Exception ocurred " + std::string(e.what())));
     }

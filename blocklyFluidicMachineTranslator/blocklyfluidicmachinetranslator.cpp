@@ -38,6 +38,7 @@ BlocklyFluidicMachineTranslator::ModelMappingTuple BlocklyFluidicMachineTranslat
             processConfigurationBlock(configurationBlock);
         }
         processConnectionMap();
+        processTwins();
 
         double defaultRate = js["default_rate"];
         units::Volumetric_Flow defaultRateUnits = UtilsJSON::getVolumeUnits(js["default_rate_volume_units"]) /
@@ -80,7 +81,6 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
         std::string nodeType = blockObj["type"];
         if (nodeType.compare(OPEN_CONTAINER_STR) == 0) {
             UtilsJSON::checkPropertiesExists(std::vector<std::string>{"extra_functions"}, blockObj);
-
             processOpenContainer(id, numberPins, blockObj["functions"], blockObj["extra_functions"]);
         } else if (nodeType.compare(CLOSE_CONTAINER_STR) == 0) {
             UtilsJSON::checkPropertiesExists(std::vector<std::string>{"extra_functions"}, blockObj);
@@ -90,9 +90,12 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
             processPump(id, numberPins, blockObj["functions"]);
         } else if (nodeType.compare(VALVE_STR) == 0) {
             processValve(id, numberPins, blockObj["functions"]);
+            processValveTwins(id, blockObj);
         } else {
             throw(std::invalid_argument("unknow node type: " + nodeType));
         }
+
+        processDirectionsPorts(id, blockObj);
 
         for(int i = 1; i <= numberPins; i++) {
             std::string portName = "port" + std::to_string(i);
@@ -108,17 +111,35 @@ void BlocklyFluidicMachineTranslator::processConfigurationBlock(const nlohmann::
     }
 }
 
+void BlocklyFluidicMachineTranslator::processDirectionsPorts(const std::string & id, const nlohmann::json & blockObj) throw(std::invalid_argument) {
+    try {
+        UtilsJSON::checkPropertiesExists({"in_ports", "out_ports"}, blockObj);
+
+        std::unordered_set<int> inPorts;
+        json inPortsList = blockObj["in_ports"];
+        for(auto it = inPortsList.begin(); it != inPortsList.end(); ++it) {
+            int actualInPort = *it;
+            inPorts.insert(actualInPort-1);
+        }
+
+        std::unordered_set<int> outPorts;
+        json outPortsList = blockObj["out_ports"];
+        for(auto it = outPortsList.begin(); it != outPortsList.end(); ++it) {
+            int actualInPort = *it;
+            outPorts.insert(actualInPort-1);
+        }
+
+        addDirectionPorts(getReferenceId(id), inPorts, outPorts);
+    } catch (std::exception & e) {
+        throw(std::invalid_argument("BlocklyFluidicMachineTranslator::processDirectionsPorts(), exception ocurred: " + std::string(e.what())));
+    }
+}
+
 void BlocklyFluidicMachineTranslator::processPump(const std::string & id, int pinNumber, const nlohmann::json & functionsObj) {
     bool reversible;
-    std::unordered_set<int> inPorts;
-    std::unordered_set<int> outPorts;
-    std::shared_ptr<PumpPluginFunction> pump =
-            FunctionsdBlocksTranslator::processPumpFunction(functionsObj, reversible, inPorts, outPorts);
+    std::shared_ptr<PumpPluginFunction> pump = FunctionsdBlocksTranslator::processPumpFunction(functionsObj, reversible);
 
     int idNum = getReferenceId(id);
-
-    addDirectionPorts(idNum, inPorts, outPorts);
-
     std::shared_ptr<PumpNode> pumpPtr = std::make_shared<PumpNode>(idNum,
                                                                    pinNumber,
                                                                    reversible ? PumpNode::bidirectional : PumpNode::unidirectional,
@@ -130,11 +151,29 @@ void BlocklyFluidicMachineTranslator::processValve(const std::string & id, int p
     ValveNode::TruthTable tTable;
     std::shared_ptr<ValvePluginRouteFunction> valve = FunctionsdBlocksTranslator::processValveFunction(functionsObj, tTable);
 
-    std::shared_ptr<ValveNode> valvePtr = std::make_shared<ValveNode>(getReferenceId(id),
-                                                                     pinNumber,
-                                                                     tTable,
-                                                                     valve);
+    int referenceId = getReferenceId(id);
+    std::shared_ptr<ValveNode> valvePtr = std::make_shared<ValveNode>(referenceId,
+                                                                      pinNumber,
+                                                                      tTable,
+                                                                      valve);
     model->addNode(valvePtr);
+}
+
+void BlocklyFluidicMachineTranslator::processValveTwins(const std::string & id, const nlohmann::json & functionsObj) {
+    if (UtilsJSON::hasProperty("number_twins", functionsObj)) {
+        std::unordered_set<int> twins = {getReferenceId(id)};
+
+        int numberTwins = functionsObj["number_twins"];
+        for(int i=0; i < numberTwins; i++) {
+
+            std::string name = "twin" + std::to_string(i + 1);
+            if (UtilsJSON::hasProperty(name, functionsObj)) {
+                int twinId = std::floorf(processReferenceBlock(functionsObj[name]));
+                twins.insert(twinId);
+            }
+        }
+        twinsVector.push_back(twins);
+    }
 }
 
 void BlocklyFluidicMachineTranslator::processOpenContainer(
@@ -168,14 +207,9 @@ void BlocklyFluidicMachineTranslator::processCloseContainer(
     units::Volume minVolume;
     units::Volume capacity;
 
-    std::unordered_set<int> inPorts;
-    std::unordered_set<int> outPorts;
-    FunctionsdBlocksTranslator::processCloseGlasswareFunction(functionsObj, minVolume, capacity, inPorts, outPorts);
+    FunctionsdBlocksTranslator::processCloseGlasswareFunction(functionsObj, minVolume, capacity);
 
     int idNum = getReferenceId(id);
-
-    addDirectionPorts(idNum, inPorts, outPorts);
-
     std::shared_ptr<ContainerNode> nodePtr =
             std::make_shared<ContainerNode>(idNum, pinNumber, ContainerNode::close, capacity);
 
@@ -238,6 +272,26 @@ void BlocklyFluidicMachineTranslator::processConnectionMap() throw(std::invalid_
         proccessed.insert(source); //add to processed so edges are not duplicated
     }
 
+    //then process valves
+    const std::unordered_set<int> & valves = model->getValvesIdsSet();
+    for(int source : valves) {
+        const std::unordered_map<float,int> & portsConnections = connectionsMap[source];
+
+        for(const auto & portConnection: portsConnections) {
+            int target = std::floorf(portConnection.first);
+            float prime = portConnection.first - target;
+
+            int sourcePort = portConnection.second;
+            int targetPort = connectionsMap[target][source + prime];
+
+            if (proccessed.find(target) == proccessed.end()) {
+                model->connectNodes(source, target, sourcePort, targetPort);
+            }
+        }
+        connectionsMap.erase(source); //once this node is processed remove it from the map so is not processed again in the next for
+        proccessed.insert(source); //add to processed so edges are not duplicated
+    }
+
     //then process the reamining nodes that does not have fixed directions
     for(const auto & connectionPair: connectionsMap) {
         int source = connectionPair.first;
@@ -255,6 +309,12 @@ void BlocklyFluidicMachineTranslator::processConnectionMap() throw(std::invalid_
             }
         }
         proccessed.insert(source); //add to processed so edges are not duplicated
+    }
+}
+
+void BlocklyFluidicMachineTranslator::processTwins() {
+    for(const std::unordered_set<int> & twins: twinsVector) {
+        model->setValvesAsTwins(twins);
     }
 }
 
